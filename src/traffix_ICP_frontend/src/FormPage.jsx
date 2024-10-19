@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import axios from 'axios';
-// import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend'; // Import ICP canister
+import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend'; // Import ICP canister
 import './FormPage.css'; 
 
 function FormPage() {
