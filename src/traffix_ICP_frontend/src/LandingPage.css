@@ -1,0 +1,97 @@
+/* LandingPage.css */
+
+/* Base Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f9fafb;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Container: Use Flexbox to stack items vertically */
+  .container {
+    display: flex;
+    flex-direction: column;  /* Align items vertically */
+    justify-content: center;
+    align-items: center;
+    width: 90%;
+    max-width: 600px;
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    gap: 1.5rem; /* Add space between elements */
+  }
+  
+  /* Logo */
+  .logo {
+    width: 150px;
+    margin-bottom: 10px;
+    transition: transform 0.3s ease;
+  }
+  .logo:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Title */
+  .title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #1f2937;
+    text-align: center;
+    padding-top: 40px;
+  }
+  
+  /* Overview Text */
+  .overview {
+    font-size: 1rem;
+    color: #6b7280;
+    line-height: 1.6;
+    text-align: center;
+  }
+  
+  /* Features and Technologies Sections */
+  section {
+    text-align: left;
+    width: 100%; /* Make sections span full width */
+    margin-bottom: 10px;
+  }
+  
+  .features h2, .technologies h2 {
+    font-size: 1.5rem;
+    color: #4f46e5;
+    margin-bottom: 10px;
+  }
+  
+  ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    line-height: 1.8;
+  }
+  
+  ul li {
+    font-size: 1rem;
+    color: #374151;
+  }
+  
+  /* Start Button */
+  .start-button {
+    background-color: #4f46e5;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .start-button:hover {
+    background-color: #4338ca;
+    transform: scale(1.05);
+  }
+  
