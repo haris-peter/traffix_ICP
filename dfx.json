@@ -1,0 +1,44 @@
+{
+  "canisters": {
+    "internet_identity": {
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "frontend": {},
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    },
+    "traffix_ICP_backend": {
+      "main": "src/traffix_ICP_backend/main.mo",
+      "type": "motoko"
+    },
+    "traffix_ICP_frontend": {
+      "dependencies": [
+        "traffix_ICP_backend"
+      ],
+      "source": [
+        "src/traffix_ICP_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "traffix_ICP_frontend"
+    }
+  },
+  "defaults": {
+    "bitcoin": {
+      "enabled": true,
+      "log_level": "info",
+      "nodes": [
+        "127.0.0.1:18444"
+      ]
+    },
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
