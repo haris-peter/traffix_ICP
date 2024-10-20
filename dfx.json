@@ -40,5 +40,17 @@
     }
   },
   "output_env_file": ".env",
+  "http_server": {
+    "headers": {
+      "Permissions-Policy": "camera=(self); microphone=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; object-src 'none';"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
   "version": 1
 }
