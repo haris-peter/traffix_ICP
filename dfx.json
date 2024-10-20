@@ -43,7 +43,7 @@
   "http_server": {
     "headers": {
       "Permissions-Policy": "camera=(self); microphone=()",
-      "Content-Security-Policy": "default-src 'self'; script-src 'self'; object-src 'none';"
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https:; media-src 'self' blob:; object-src 'none';"
     }
   },
   "networks": {

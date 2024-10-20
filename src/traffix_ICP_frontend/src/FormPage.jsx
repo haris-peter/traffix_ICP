@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import axios from 'axios';
-import './FormPage.css'; // Import the CSS file
+import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend'; // Import ICP canister
+import './FormPage.css'; 
 
 function FormPage() {
   const [imageSrc, setImageSrc] = useState(null);
@@ -22,7 +23,7 @@ function FormPage() {
       .catch((err) => console.error('Camera access denied:', err));
   }
 
-  // Capture the image from the video stream
+  // Capture image from the video stream
   function captureImage() {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -36,30 +37,13 @@ function FormPage() {
     video.srcObject.getTracks().forEach((track) => track.stop()); // Stop camera
   }
 
-  // Upload the image to IPFS using Pinata
-  async function handleUpload() {
-    if (!imageSrc) {
-      alert('Please capture an image first!');
-      return;
-    }
-
+  // Upload image to IPFS
+  async function uploadToIPFS() {
     try {
-      const blob = await fetch(imageSrc).then((res) => res.blob()); // Convert dataURL to blob
+      const blob = await fetch(imageSrc).then((res) => res.blob());
       const formData = new FormData();
       formData.append('file', blob);
 
-      // Optional: Add metadata (description, location, timestamp)
-      const metadata = JSON.stringify({
-        name: 'Road Safety Report',
-        keyvalues: {
-          description,
-          location,
-          timestamp,
-        },
-      });
-      formData.append('pinataMetadata', metadata);
-
-      // Pinata API call
       const response = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -71,10 +55,28 @@ function FormPage() {
       const ipfsHash = response.data.IpfsHash;
       const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
       setIpfsUrl(ipfsUrl);
-      alert('Image uploaded to IPFS successfully!');
+
+      // Call smart contract to store the CID, description, and timestamp
+      await submitToContract(ipfsHash);
+      alert('Successfully uploaded to IPFS and recorded on blockchain!');
     } catch (error) {
       console.error('IPFS upload error:', error);
       alert('Failed to upload to IPFS.');
+    }
+  }
+
+  // Submit CID, description, and timestamp to the ICP smart contract
+  async function submitToContract(cid) {
+    try {
+      const success = await traffix_ICP_backend.submitReport(cid, description, timestamp);
+      if (success) {
+        alert('Report successfully submitted to the smart contract!');
+      } else {
+        alert('Failed to submit the report to the smart contract.');
+      }
+    } catch (error) {
+      console.error('ICP contract submission error:', error);
+      alert('Error submitting to smart contract.');
     }
   }
 
@@ -121,7 +123,7 @@ function FormPage() {
           readOnly
           className="input"
         />
-        <button type="button" onClick={handleUpload} className="button upload-button">
+        <button type="button" onClick={uploadToIPFS} className="button upload-button">
           Upload to IPFS
         </button>
       </form>
