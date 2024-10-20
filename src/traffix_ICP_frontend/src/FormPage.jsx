@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend'; // Import ICP canister
-import './FormPage.css'; 
+// import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend';
+import './FormPage.css';
 
 function FormPage() {
   const [imageSrc, setImageSrc] = useState(null);
@@ -9,21 +9,50 @@ function FormPage() {
   const [location, setLocation] = useState('');
   const [timestamp, setTimestamp] = useState('');
   const [ipfsUrl, setIpfsUrl] = useState('');
+  const [stream, setStream] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Start camera stream
-  function openCamera() {
-    navigator.mediaDevices
-      .getUserMedia({ video: true })
-      .then((stream) => {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      })
-      .catch((err) => console.error('Camera access denied:', err));
-  }
+  useEffect(() => {
+    // Set permissions policy
+    document.head.appendChild(Object.assign(document.createElement('meta'), {
+      httpEquiv: 'Permissions-Policy',
+      content: 'camera=self'
+    }));
 
-  // Capture image from the video stream
+    // Cleanup function to stop camera stream when component unmounts
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
+  const checkCameraSupport = useCallback(() => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Your browser does not support camera access');
+      return false;
+    }
+    return true;
+  }, []);
+
+  const openCamera = useCallback(async () => {
+    console.log('Attempting to open camera...');
+    if (!checkCameraSupport()) return;
+
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      console.log('Camera accessed successfully');
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      console.error('Detailed camera access error:', error);
+      alert('Failed to access camera. Please check your browser settings and try again.');
+    }
+  }, [checkCameraSupport]);
+
   function captureImage() {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -33,12 +62,19 @@ function FormPage() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/png');
     setImageSrc(dataUrl);
-    setTimestamp(new Date().toLocaleString()); // Set timestamp
-    video.srcObject.getTracks().forEach((track) => track.stop()); // Stop camera
+    setTimestamp(new Date().toLocaleString());
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      setStream(null);
+    }
   }
 
-  // Upload image to IPFS
   async function uploadToIPFS() {
+    if (!imageSrc) {
+      alert('Please capture an image first.');
+      return;
+    }
+
     try {
       const blob = await fetch(imageSrc).then((res) => res.blob());
       const formData = new FormData();
@@ -56,7 +92,6 @@ function FormPage() {
       const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
       setIpfsUrl(ipfsUrl);
 
-      // Call smart contract to store the CID, description, and timestamp
       await submitToContract(ipfsHash);
       alert('Successfully uploaded to IPFS and recorded on blockchain!');
     } catch (error) {
@@ -65,14 +100,11 @@ function FormPage() {
     }
   }
 
-  // Submit CID, description, and timestamp to the ICP smart contract
   async function submitToContract(cid) {
     try {
       const success = await traffix_ICP_backend.submitReport(cid, description, timestamp);
-      if (success) {
-        alert('Report successfully submitted to the smart contract!');
-      } else {
-        alert('Failed to submit the report to the smart contract.');
+      if (!success) {
+        throw new Error('Contract submission failed');
       }
     } catch (error) {
       console.error('ICP contract submission error:', error);
@@ -87,7 +119,7 @@ function FormPage() {
       </button>
 
       <div className="camera-container">
-        <video ref={videoRef} className="video" autoPlay></video>
+        <video ref={videoRef} className="video" autoPlay playsInline></video>
         <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
       </div>
 
@@ -97,7 +129,7 @@ function FormPage() {
         </div>
       )}
 
-      <button onClick={captureImage} className="button capture-button">
+      <button onClick={captureImage} className="button capture-button" disabled={!stream}>
         Capture Picture
       </button>
 
@@ -123,7 +155,7 @@ function FormPage() {
           readOnly
           className="input"
         />
-        <button type="button" onClick={uploadToIPFS} className="button upload-button">
+        <button type="button" onClick={uploadToIPFS} className="button upload-button" disabled={!imageSrc}>
           Upload to IPFS
         </button>
       </form>
