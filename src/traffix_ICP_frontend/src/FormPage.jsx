@@ -60,8 +60,10 @@ function FormPage() {
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/png');
-    setImageSrc(dataUrl);
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      setImageSrc(url);
+    }, 'image/jpeg');
     setTimestamp(new Date().toLocaleString());
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
@@ -74,24 +76,25 @@ function FormPage() {
       alert('Please capture an image first.');
       return;
     }
-
+  
     try {
-      const blob = await fetch(imageSrc).then((res) => res.blob());
+      const response = await fetch(imageSrc);
+      const blob = await response.blob();
       const formData = new FormData();
-      formData.append('file', blob);
-
-      const response = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', formData, {
+      formData.append('file', blob, 'capture.jpg');
+  
+      const pinataResponse = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           pinata_api_key: 'de32c8a2eec50ccf014c',
           pinata_secret_api_key: 'ae43ef563dcb7c62e8063158e390819da9ecee32751c46d47211b6ca2e84ab32',
         },
       });
-
-      const ipfsHash = response.data.IpfsHash;
+  
+      const ipfsHash = pinataResponse.data.IpfsHash;
       const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
       setIpfsUrl(ipfsUrl);
-
+  
       await submitToContract(ipfsHash);
       alert('Successfully uploaded to IPFS and recorded on blockchain!');
     } catch (error) {
