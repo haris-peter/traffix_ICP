@@ -96,3 +96,20 @@ body {
     margin-top: 10px;
   }
   
+
+  /* Loader */
+.button.upload-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+  
+  /* New IPFS button */
+  .button.show-ipfs-button {
+    background-color: #22c55e;
+    margin-top: 10px;
+  }
+  
+  .button.show-ipfs-button:hover {
+    background-color: #16a34a;
+  }
+  

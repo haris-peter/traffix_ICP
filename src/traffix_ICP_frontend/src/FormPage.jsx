@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend';
 import './FormPage.css';
 
 function FormPage() {
@@ -10,12 +9,12 @@ function FormPage() {
   const [location, setLocation] = useState('');
   const [timestamp, setTimestamp] = useState('');
   const [ipfsUrl, setIpfsUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false); // State for loader
   const [stream, setStream] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    // Set permissions policy and CSP
     const metaTags = [
       { httpEquiv: 'Permissions-Policy', content: 'camera=self' },
       { httpEquiv: 'Content-Security-Policy', content: "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* https://icp0.io https://*.icp0.io https://icp-api.io https://api.pinata.cloud blob:; media-src 'self' blob:; img-src 'self' data: blob: https://gateway.pinata.cloud; style-src 'self' 'unsafe-inline'" }
@@ -35,17 +34,13 @@ function FormPage() {
   }, [stream]);
 
   const openCamera = useCallback(async () => {
-    console.log('Attempting to open camera...');
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      console.log('Camera accessed successfully');
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+      if (videoRef.current) videoRef.current.srcObject = mediaStream;
     } catch (error) {
-      console.error('Detailed camera access error:', error);
-      alert('Failed to access camera. Please check your browser settings and try again.');
+      console.error('Camera access error:', error);
+      alert('Failed to access camera. Please check your browser settings.');
     }
   }, []);
 
@@ -56,11 +51,13 @@ function FormPage() {
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       setImageSrc(url);
       setImageBlob(blob);
     }, 'image/jpeg');
+
     setTimestamp(new Date().toLocaleString());
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
@@ -73,6 +70,8 @@ function FormPage() {
       alert('Please capture an image first.');
       return;
     }
+
+    setIsUploading(true); // Show loader
 
     try {
       const formData = new FormData();
@@ -95,6 +94,8 @@ function FormPage() {
     } catch (error) {
       console.error('IPFS upload error:', error);
       alert('Failed to upload to IPFS.');
+    } finally {
+      setIsUploading(false); // Hide loader
     }
   }
 
@@ -106,7 +107,6 @@ function FormPage() {
       }
     } catch (error) {
       console.error('ICP contract submission error:', error);
-      alert('Error submitting to smart contract.');
     }
   }
 
@@ -153,17 +153,24 @@ function FormPage() {
           readOnly
           className="input"
         />
-        <button type="button" onClick={uploadToIPFS} className="button upload-button" disabled={!imageSrc}>
-          Upload to IPFS
+        <button
+          type="button"
+          onClick={uploadToIPFS}
+          className="button upload-button"
+          disabled={!imageSrc || isUploading}
+        >
+          {isUploading ? 'Uploading...' : 'Upload to IPFS'}
         </button>
       </form>
 
       {ipfsUrl && (
         <div className="ipfs-url">
-          <p>View your image on IPFS:</p>
-          <a href={ipfsUrl} target="_blank" rel="noopener noreferrer">
-            {ipfsUrl}
-          </a>
+          <button
+            onClick={() => window.open(ipfsUrl, '_blank')}
+            className="button show-ipfs-button"
+          >
+            Show image in IPFS
+          </button>
         </div>
       )}
     </div>
