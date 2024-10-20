@@ -46,11 +46,5 @@
       "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https:; media-src 'self' blob:; object-src 'none';"
     }
   },
-  "networks": {
-    "local": {
-      "bind": "127.0.0.1:8000",
-      "type": "ephemeral"
-    }
-  },
   "version": 1
 }
