@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
-// import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend';
+import { traffix_ICP_backend } from 'declarations/traffix_ICP_backend';
 import './FormPage.css';
 
 function FormPage() {
   const [imageSrc, setImageSrc] = useState(null);
+  const [imageBlob, setImageBlob] = useState(null);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [timestamp, setTimestamp] = useState('');
@@ -14,13 +15,18 @@ function FormPage() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    // Set permissions policy
-    document.head.appendChild(Object.assign(document.createElement('meta'), {
-      httpEquiv: 'Permissions-Policy',
-      content: 'camera=self'
-    }));
+    // Set permissions policy and CSP
+    const metaTags = [
+      { httpEquiv: 'Permissions-Policy', content: 'camera=self' },
+      { httpEquiv: 'Content-Security-Policy', content: "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* https://icp0.io https://*.icp0.io https://icp-api.io https://api.pinata.cloud blob:; media-src 'self' blob:; img-src 'self' data: blob: https://gateway.pinata.cloud; style-src 'self' 'unsafe-inline'" }
+    ];
 
-    // Cleanup function to stop camera stream when component unmounts
+    metaTags.forEach(tag => {
+      const meta = document.createElement('meta');
+      Object.assign(meta, tag);
+      document.head.appendChild(meta);
+    });
+
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -28,18 +34,8 @@ function FormPage() {
     };
   }, [stream]);
 
-  const checkCameraSupport = useCallback(() => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Your browser does not support camera access');
-      return false;
-    }
-    return true;
-  }, []);
-
   const openCamera = useCallback(async () => {
     console.log('Attempting to open camera...');
-    if (!checkCameraSupport()) return;
-
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       console.log('Camera accessed successfully');
@@ -51,7 +47,7 @@ function FormPage() {
       console.error('Detailed camera access error:', error);
       alert('Failed to access camera. Please check your browser settings and try again.');
     }
-  }, [checkCameraSupport]);
+  }, []);
 
   function captureImage() {
     const canvas = canvasRef.current;
@@ -63,6 +59,7 @@ function FormPage() {
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       setImageSrc(url);
+      setImageBlob(blob);
     }, 'image/jpeg');
     setTimestamp(new Date().toLocaleString());
     if (stream) {
@@ -72,17 +69,15 @@ function FormPage() {
   }
 
   async function uploadToIPFS() {
-    if (!imageSrc) {
+    if (!imageBlob) {
       alert('Please capture an image first.');
       return;
     }
-  
+
     try {
-      const response = await fetch(imageSrc);
-      const blob = await response.blob();
       const formData = new FormData();
-      formData.append('file', blob, 'capture.jpg');
-  
+      formData.append('file', imageBlob, 'capture.jpg');
+
       const pinataResponse = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -90,11 +85,11 @@ function FormPage() {
           pinata_secret_api_key: 'ae43ef563dcb7c62e8063158e390819da9ecee32751c46d47211b6ca2e84ab32',
         },
       });
-  
+
       const ipfsHash = pinataResponse.data.IpfsHash;
       const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
       setIpfsUrl(ipfsUrl);
-  
+
       await submitToContract(ipfsHash);
       alert('Successfully uploaded to IPFS and recorded on blockchain!');
     } catch (error) {
